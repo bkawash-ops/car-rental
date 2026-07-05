@@ -17,7 +17,7 @@ def get_db():
 def init_db():
     conn = get_db()
 
-    # users
+    # USERS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,22 +27,21 @@ def init_db():
         )
     """)
 
-    # cars
-    # سيارات افتراضية
-    cars = [
-        ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
-        ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
-        ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
-    ]
+    # CARS
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS cars (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            type TEXT,
+            model TEXT,
+            color TEXT,
+            plate TEXT,
+            fuel TEXT,
+            status TEXT,
+            daily_rate REAL
+        )
+    """)
 
-    for c in cars:
-        conn.execute("""
-            INSERT OR IGNORE INTO cars
-            (type, model, color, plate, fuel, status, daily_rate)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, c)
-
-    # contracts
+    # CONTRACTS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS contracts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +57,7 @@ def init_db():
         )
     """)
 
-    # users الافتراضيين
+    # ---------------- DEFAULT USERS ----------------
     users = [
         ("admin", "1234", "admin"),
         ("seller", "1234", "seller")
@@ -73,6 +72,19 @@ def init_db():
         except:
             pass
 
+    # ---------------- DEFAULT CARS (مهم جداً) ----------------
+    cars = [
+        ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
+        ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
+        ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
+    ]
+
+    for c in cars:
+        conn.execute("""
+            INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, c)
+
     conn.commit()
     conn.close()
 
@@ -84,8 +96,8 @@ with app.app_context():
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
+
         username = request.form["username"]
         password = request.form["password"]
 
@@ -101,7 +113,7 @@ def login():
             session["role"] = user["role"]
             return redirect("/dashboard")
 
-        return "خطأ في اسم المستخدم أو كلمة المرور"
+        return "خطأ في البيانات"
 
     return render_template("login.html")
 
@@ -109,13 +121,11 @@ def login():
 # ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
-
     if "user" not in session:
         return redirect("/login")
 
     if session["role"] == "admin":
         return redirect("/")
-
     return redirect("/contracts")
 
 
@@ -129,7 +139,6 @@ def logout():
 # ---------------- HOME (ADMIN ONLY) ----------------
 @app.route("/")
 def home():
-
     if "user" not in session:
         return redirect("/login")
 
@@ -146,7 +155,6 @@ def home():
 # ---------------- ADD CAR ----------------
 @app.route("/add", methods=["POST"])
 def add_car():
-
     conn = get_db()
 
     conn.execute("""
@@ -163,37 +171,21 @@ def add_car():
 
     conn.commit()
     conn.close()
-
     return redirect("/")
 
 
-# ---------------- DELETE CAR ----------------
-@app.route("/delete/<int:car_id>")
-def delete_car(car_id):
-
-    conn = get_db()
-    conn.execute("DELETE FROM cars WHERE id=?", (car_id,))
-    conn.commit()
-    conn.close()
-
-    return redirect("/")
-
-
-# ---------------- CONTRACTS (SELLER + ADMIN VIEW DIFFERENT DATA) ----------------
+# ---------------- CONTRACTS ----------------
 @app.route("/contracts")
 def contracts():
-
     if "user" not in session:
         return redirect("/login")
 
     conn = get_db()
 
-    # السيارات المتاحة فقط للبائع
     cars = conn.execute("""
         SELECT * FROM cars WHERE status='Available'
     """).fetchall()
 
-    # كل العقود
     contracts = conn.execute("""
         SELECT contracts.*,
                cars.model,
@@ -212,7 +204,6 @@ def contracts():
 # ---------------- CREATE CONTRACT ----------------
 @app.route("/create_contract", methods=["POST"])
 def create_contract():
-
     conn = get_db()
 
     total = float(request.form.get("total_price") or 0)
@@ -246,6 +237,5 @@ def create_contract():
     return redirect("/contracts")
 
 
-# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)
