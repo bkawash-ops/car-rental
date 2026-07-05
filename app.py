@@ -4,6 +4,15 @@ import sqlite3
 app = Flask(__name__)
 
 DB_NAME = "car_rental.db"
+
+# ✅ أولاً: تعريف get_db
+def get_db():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# ❗ إنشاء جدول العقود (بعد تعريف get_db)
 with app.app_context():
     conn = get_db()
     conn.execute("""
@@ -20,10 +29,7 @@ with app.app_context():
     """)
     conn.commit()
     conn.close()
-def get_db():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
+
 
 @app.route("/")
 def home():
@@ -31,6 +37,7 @@ def home():
     cars = conn.execute("SELECT * FROM cars").fetchall()
     conn.close()
     return render_template("index.html", cars=cars)
+
 
 @app.route("/add", methods=["POST"])
 def add_car():
@@ -50,6 +57,8 @@ def add_car():
     conn.commit()
     conn.close()
     return redirect("/")
+
+
 @app.route("/delete/<int:car_id>")
 def delete_car(car_id):
     conn = get_db()
@@ -57,7 +66,8 @@ def delete_car(car_id):
     conn.commit()
     conn.close()
     return redirect("/")
-    
+
+
 @app.route("/contracts")
 def contracts():
     conn = get_db()
@@ -68,8 +78,9 @@ def contracts():
         LEFT JOIN cars ON cars.id = contracts.car_id
     """).fetchall()
     conn.close()
-
     return render_template("contracts.html", cars=cars, contracts=contracts)
+
+
 @app.route("/create_contract", methods=["POST"])
 def create_contract():
     conn = get_db()
