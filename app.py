@@ -42,18 +42,18 @@ def init_db():
 
     # contracts (مهم: أضفنا الدفعة والمتبقي)
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS contracts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            customer_name TEXT,
-            customer_phone TEXT,
-            car_id INTEGER,
-            start_date TEXT,
-            end_date TEXT,
-            total_price REAL,
-            paid_amount REAL,
-            remaining_amount REAL,
-            status TEXT
-        )
+    CREATE TABLE IF NOT EXISTS contracts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT,
+        customer_phone TEXT,
+        car_id INTEGER,
+        start_date TEXT,
+        end_date TEXT,
+        total_price REAL,
+        paid_amount REAL DEFAULT 0,
+        remaining REAL DEFAULT 0,
+        status TEXT
+    )
     """)
 
     # default users
