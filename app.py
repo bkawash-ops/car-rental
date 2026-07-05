@@ -4,7 +4,22 @@ import sqlite3
 app = Flask(__name__)
 
 DB_NAME = "car_rental.db"
-
+with app.app_context():
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS contracts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_name TEXT,
+            customer_phone TEXT,
+            car_id INTEGER,
+            start_date TEXT,
+            end_date TEXT,
+            total_price REAL,
+            status TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
 def get_db():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
