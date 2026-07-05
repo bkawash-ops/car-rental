@@ -43,3 +43,39 @@ def delete_car(car_id):
     conn.close()
     return redirect("/")
     
+@app.route("/contracts")
+def contracts():
+    conn = get_db()
+    cars = conn.execute("SELECT * FROM cars WHERE status='Available'").fetchall()
+    contracts = conn.execute("""
+        SELECT contracts.*, cars.model, cars.plate
+        FROM contracts
+        LEFT JOIN cars ON cars.id = contracts.car_id
+    """).fetchall()
+    conn.close()
+
+    return render_template("contracts.html", cars=cars, contracts=contracts)
+    @app.route("/create_contract", methods=["POST"])
+def create_contract():
+    conn = get_db()
+
+    conn.execute("""
+        INSERT INTO contracts 
+        (customer_name, customer_phone, car_id, start_date, end_date, total_price, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        request.form["customer_name"],
+        request.form["customer_phone"],
+        request.form["car_id"],
+        request.form["start_date"],
+        request.form["end_date"],
+        request.form["total_price"],
+        "Active"
+    ))
+
+    conn.execute("UPDATE cars SET status='Rented' WHERE id=?",
+                 (request.form["car_id"],))
+
+    conn.commit()
+    conn.close()
+    return redirect("/contracts")
