@@ -10,7 +10,6 @@
             background: #f4f6f8;
         }
 
-        /* Navbar */
         .navbar {
             background: #111827;
             color: white;
@@ -19,12 +18,10 @@
             font-weight: bold;
         }
 
-        /* Layout */
         .container {
             padding: 20px;
         }
 
-        /* Cards */
         .card {
             background: white;
             padding: 20px;
@@ -33,7 +30,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        /* Form */
         .form input {
             padding: 10px;
             margin: 5px;
@@ -41,7 +37,6 @@
             border-radius: 6px;
         }
 
-        /* Buttons */
         .btn {
             padding: 10px 15px;
             border: none;
@@ -59,7 +54,17 @@
             background: #12833c;
         }
 
-        /* Table */
+        .btn-delete {
+            background: #dc2626;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+        }
+
+        .btn-delete:hover {
+            background: #b91c1c;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -142,6 +147,7 @@
                 <th>Plate</th>
                 <th>Status</th>
                 <th>Price / Day</th>
+                <th>Action</th>
             </tr>
 
             {% for car in cars %}
@@ -161,6 +167,13 @@
                 </td>
 
                 <td>{{ car.daily_rate }}</td>
+
+                <td>
+                    <a href="/delete/{{ car.id }}"
+                       onclick="return confirm('Are you sure you want to delete this car?')">
+                        <button class="btn-delete">Delete</button>
+                    </a>
+                </td>
             </tr>
             {% endfor %}
 
