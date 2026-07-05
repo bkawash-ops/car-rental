@@ -204,10 +204,12 @@ def contracts():
 # ---------------- CREATE CONTRACT ----------------
 @app.route("/create_contract", methods=["POST"])
 def create_contract():
+
     conn = get_db()
 
     total = float(request.form.get("total_price") or 0)
     paid = float(request.form.get("paid_amount") or 0)
+
     remaining = total - paid
 
     conn.execute("""
