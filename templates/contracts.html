@@ -84,14 +84,20 @@
 <body>
 
 <div class="navbar">
-    🚗 عقود التأجير
+    📄 نظام تأجير السيارات
 
-    <a href="/logout" style="float:right; color:white; margin-left:15px;">
-        🚪 خروج
+    {% if session['role'] == 'admin' %}
+        <a href="/" style="float:right; color:white; margin-left:15px;">
+            🚗 السيارات
+        </a>
+    {% endif %}
+
+    <a href="/contracts" style="float:right; color:white; margin-left:15px;">
+        📄 العقود
     </a>
 
-    <a href="/" style="float:right; color:white;">
-        🚘 السيارات
+    <a href="/logout" style="float:right; color:white;">
+        🚪 خروج
     </a>
 </div>
 <div class="container">
