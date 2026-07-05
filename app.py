@@ -71,14 +71,30 @@ def delete_car(car_id):
 @app.route("/contracts")
 def contracts():
     conn = get_db()
-    cars = conn.execute("SELECT * FROM cars WHERE status='Available'").fetchall()
+
+    # السيارات المتاحة فقط
+    cars = conn.execute("""
+        SELECT * FROM cars WHERE status='Available'
+    """).fetchall()
+
+    # العقود + حساب الأيام داخل SQL
     contracts = conn.execute("""
-        SELECT contracts.*, cars.model, cars.plate
+        SELECT contracts.*,
+               cars.model,
+               cars.plate,
+               (julianday(end_date) - julianday(start_date)) AS days
         FROM contracts
         LEFT JOIN cars ON cars.id = contracts.car_id
+        ORDER BY contracts.id DESC
     """).fetchall()
+
     conn.close()
-    return render_template("contracts.html", cars=cars, contracts=contracts)
+
+    return render_template(
+        "contracts.html",
+        cars=cars,
+        contracts=contracts
+    )
 
 
 @app.route("/create_contract", methods=["POST"])
