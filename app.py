@@ -1,23 +1,37 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect
 import sqlite3
 
 app = Flask(__name__)
 
 DB_NAME = "car_rental.db"
 
-@app.route("/")
-def home():
+def get_db():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
+    return conn
 
-    cars = conn.execute("""
-        SELECT id, type, model, color, plate, fuel, status, daily_rate
-        FROM cars
-    """).fetchall()
-
+@app.route("/")
+def home():
+    conn = get_db()
+    cars = conn.execute("SELECT * FROM cars").fetchall()
     conn.close()
-
     return render_template("index.html", cars=cars)
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+@app.route("/add", methods=["POST"])
+def add_car():
+    conn = get_db()
+    conn.execute("""
+        INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        request.form["type"],
+        request.form["model"],
+        request.form["color"],
+        request.form["plate"],
+        request.form["fuel"],
+        request.form["status"],
+        request.form["daily_rate"]
+    ))
+    conn.commit()
+    conn.close()
+    return redirect("/")
