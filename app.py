@@ -55,7 +55,7 @@ def contracts():
     conn.close()
 
     return render_template("contracts.html", cars=cars, contracts=contracts)
-    @app.route("/create_contract", methods=["POST"])
+@app.route("/create_contract", methods=["POST"])
 def create_contract():
     conn = get_db()
 
