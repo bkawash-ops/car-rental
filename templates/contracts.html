@@ -86,34 +86,29 @@
 <div class="navbar">
     📄 نظام تأجير السيارات
 
-    {% if session['role'] == 'admin' %}
-        <a href="/" style="float:right; color:white; margin-left:15px;">
-            🚗 السيارات
-        </a>
+    {% if role == 'admin' %}
+        <a href="/">🚗 السيارات</a>
     {% endif %}
 
-    <a href="/contracts" style="float:right; color:white; margin-left:15px;">
-        📄 العقود
-    </a>
-
-    <a href="/logout" style="float:right; color:white;">
-        🚪 خروج
-    </a>
+    <a href="/contracts">📄 العقود</a>
+    <a href="/logout">🚪 خروج</a>
 </div>
+
 <div class="container">
 
     <!-- CREATE CONTRACT -->
     <div class="card">
-        <h2>➕ إنشاء عقد</h2>
+        <h2>➕ إنشاء عقد جديد</h2>
 
         <form method="POST" action="/create_contract">
 
-            <input name="customer_name" placeholder="Customer Name" required>
-            <input name="customer_phone" placeholder="Phone" required>
+            <input name="customer_name" placeholder="اسم العميل" required>
+            <input name="customer_phone" placeholder="رقم الهاتف" required>
 
-            <!-- Cars -->
+            <input name="paid_amount" placeholder="الدفعة المدفوعة" value="0">
+
             <select name="car_id" required onchange="calcPrice()">
-                <option value="" data-price="0">🚗 Select Available Car</option>
+                <option value="" data-price="0">🚗 اختر سيارة</option>
 
                 {% for car in cars %}
                     <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
@@ -125,12 +120,13 @@
             <input type="date" name="start_date" required onchange="calcPrice()">
             <input type="date" name="end_date" required onchange="calcPrice()">
 
-            <input name="total_price" placeholder="Total Price" readonly>
+            <input name="total_price" placeholder="الإجمالي" readonly>
+            <input name="remaining" placeholder="المتبقي" readonly>
 
             <br><br>
 
             <button class="btn btn-add" type="submit">
-                ➕ إنشاء عقد
+                ➕ حفظ العقد
             </button>
         </form>
     </div>
@@ -149,6 +145,8 @@
                 <th>End</th>
                 <th>Days</th>
                 <th>Total</th>
+                <th>Paid</th>
+                <th>Remaining</th>
                 <th>Status</th>
             </tr>
 
@@ -162,6 +160,8 @@
                 <td>{{ c.end_date }}</td>
                 <td>{{ c.days }}</td>
                 <td>{{ c.total_price }}</td>
+                <td>{{ c.paid_amount }}</td>
+                <td>{{ c.remaining_amount }}</td>
                 <td>
                     <span class="badge active">{{ c.status }}</span>
                 </td>
@@ -174,10 +174,14 @@
 
 <script>
 function calcPrice() {
+
     let car = document.querySelector('[name="car_id"]');
     let start = document.querySelector('[name="start_date"]').value;
     let end = document.querySelector('[name="end_date"]').value;
-    let priceField = document.querySelector('[name="total_price"]');
+
+    let totalField = document.querySelector('[name="total_price"]');
+    let remainingField = document.querySelector('[name="remaining"]');
+    let paid = document.querySelector('[name="paid_amount"]').value || 0;
 
     if (!car.value || !start || !end) return;
 
@@ -187,13 +191,18 @@ function calcPrice() {
     let days = (endDate - startDate) / (1000 * 60 * 60 * 24);
 
     if (days <= 0) {
-        priceField.value = "";
+        totalField.value = "";
+        remainingField.value = "";
         return;
     }
 
     let pricePerDay = parseFloat(car.options[car.selectedIndex].dataset.price || 0);
 
-    priceField.value = (days * pricePerDay).toFixed(2);
+    let total = days * pricePerDay;
+    let remaining = total - parseFloat(paid);
+
+    totalField.value = total.toFixed(2);
+    remainingField.value = remaining.toFixed(2);
 }
 </script>
 
