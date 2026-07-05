@@ -23,7 +23,6 @@
             color: white;
             margin-left: 15px;
             text-decoration: none;
-            font-size: 16px;
         }
 
         .container {
@@ -35,7 +34,6 @@
             padding: 20px;
             margin-bottom: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         input, select {
@@ -50,7 +48,6 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-weight: bold;
         }
 
         .btn-add {
@@ -61,27 +58,20 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
         }
 
         th, td {
             padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
 
         th {
             background: #f3f4f6;
         }
 
-        tr:hover {
-            background: #f9fafb;
-        }
-
         .badge {
             padding: 5px 10px;
             border-radius: 20px;
-            font-size: 12px;
         }
 
         .active {
@@ -96,33 +86,34 @@
 <div class="navbar">
     📄 Contracts System
 
-    <a href="/">🚗 Cars</a>
     <a href="/contracts">📄 Contracts</a>
+    <a href="/">🚗 Cars</a>
 </div>
 
 <div class="container">
 
     <!-- CREATE CONTRACT -->
     <div class="card">
-        <h2>📄 Create New Contract</h2>
+        <h2>➕ Create Contract</h2>
 
         <form method="POST" action="/create_contract">
 
             <input name="customer_name" placeholder="Customer Name" required>
             <input name="customer_phone" placeholder="Phone" required>
 
+            <!-- Cars -->
             <select name="car_id" required onchange="calcPrice()">
-                <option value="">🚗 Select Available Car</option>
+                <option value="" data-price="0">🚗 Select Available Car</option>
 
                 {% for car in cars %}
-                    <option value="{{ car.id }}">
+                    <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
                         {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD/day)
                     </option>
                 {% endfor %}
             </select>
 
-            <input type="date" name="start_date" onchange="calcPrice()" required>
-            <input type="date" name="end_date" onchange="calcPrice()" required>
+            <input type="date" name="start_date" required onchange="calcPrice()">
+            <input type="date" name="end_date" required onchange="calcPrice()">
 
             <input name="total_price" placeholder="Total Price" readonly>
 
@@ -171,28 +162,28 @@
 
 </div>
 
-<!-- PRICE CALC -->
 <script>
 function calcPrice() {
-    let start = new Date(document.querySelector('[name="start_date"]').value);
-    let end = new Date(document.querySelector('[name="end_date"]').value);
-    let carSelect = document.querySelector('[name="car_id"]');
+    let car = document.querySelector('[name="car_id"]');
+    let start = document.querySelector('[name="start_date"]').value;
+    let end = document.querySelector('[name="end_date"]').value;
     let priceField = document.querySelector('[name="total_price"]');
 
-    if (start && end && carSelect.value) {
+    if (!car.value || !start || !end) return;
 
-        let days = (end - start) / (1000 * 60 * 60 * 24);
+    let startDate = new Date(start);
+    let endDate = new Date(end);
 
-        if (days > 0) {
+    let days = (endDate - startDate) / (1000 * 60 * 60 * 24);
 
-            let text = carSelect.options[carSelect.selectedIndex].text;
-            let match = text.match(/\((\d+)/);
-
-            let pricePerDay = match ? parseFloat(match[1]) : 0;
-
-            priceField.value = days * pricePerDay;
-        }
+    if (days <= 0) {
+        priceField.value = "";
+        return;
     }
+
+    let pricePerDay = parseFloat(car.options[car.selectedIndex].dataset.price || 0);
+
+    priceField.value = (days * pricePerDay).toFixed(2);
 }
 </script>
 
