@@ -35,3 +35,11 @@ def add_car():
     conn.commit()
     conn.close()
     return redirect("/")
+@app.route("/delete/<int:car_id>")
+def delete_car(car_id):
+    conn = get_db()
+    conn.execute("DELETE FROM cars WHERE id = ?", (car_id,))
+    conn.commit()
+    conn.close()
+    return redirect("/")
+    
