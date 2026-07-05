@@ -1,5 +1,7 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, send_file
 import sqlite3
+from io import BytesIO
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 app.secret_key = "car_rental_secret_2026"
@@ -57,7 +59,7 @@ def init_db():
         )
     """)
 
-    # ---------------- DEFAULT USERS ----------------
+    # USERS DEFAULT
     users = [
         ("admin", "1234", "admin"),
         ("seller", "1234", "seller")
@@ -72,18 +74,19 @@ def init_db():
         except:
             pass
 
-    # ---------------- DEFAULT CARS (مهم جداً) ----------------
-    cars = [
-        ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
-        ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
-        ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
-    ]
+    # CARS DEFAULT (لا تتكرر)
+    existing = conn.execute("SELECT COUNT(*) FROM cars").fetchone()[0]
+    if existing == 0:
+        cars = [
+            ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
+            ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
+            ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
+        ]
 
-    for c in cars:
-        conn.execute("""
+        conn.executemany("""
             INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, c)
+        """, cars)
 
     conn.commit()
     conn.close()
@@ -96,6 +99,7 @@ with app.app_context():
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
     if request.method == "POST":
 
         username = request.form["username"]
@@ -121,6 +125,7 @@ def login():
 # ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
+
     if "user" not in session:
         return redirect("/login")
 
@@ -139,6 +144,7 @@ def logout():
 # ---------------- HOME (ADMIN ONLY) ----------------
 @app.route("/")
 def home():
+
     if "user" not in session:
         return redirect("/login")
 
@@ -155,6 +161,7 @@ def home():
 # ---------------- ADD CAR ----------------
 @app.route("/add", methods=["POST"])
 def add_car():
+
     conn = get_db()
 
     conn.execute("""
@@ -171,12 +178,14 @@ def add_car():
 
     conn.commit()
     conn.close()
+
     return redirect("/")
 
 
 # ---------------- CONTRACTS ----------------
 @app.route("/contracts")
 def contracts():
+
     if "user" not in session:
         return redirect("/login")
 
@@ -209,7 +218,6 @@ def create_contract():
 
     total = float(request.form.get("total_price") or 0)
     paid = float(request.form.get("paid_amount") or 0)
-
     remaining = total - paid
 
     conn.execute("""
@@ -239,5 +247,49 @@ def create_contract():
     return redirect("/contracts")
 
 
+# ---------------- PRINT PDF CONTRACT ----------------
+@app.route("/print_contract/<int:contract_id>")
+def print_contract(contract_id):
+
+    conn = get_db()
+
+    c = conn.execute("""
+        SELECT contracts.*, cars.model, cars.plate
+        FROM contracts
+        LEFT JOIN cars ON cars.id = contracts.car_id
+        WHERE contracts.id=?
+    """, (contract_id,)).fetchone()
+
+    conn.close()
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer)
+
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawString(200, 800, "CAR RENTAL CONTRACT")
+
+    pdf.setFont("Helvetica", 12)
+    pdf.drawString(50, 750, f"Customer: {c['customer_name']}")
+    pdf.drawString(50, 730, f"Phone: {c['customer_phone']}")
+    pdf.drawString(50, 710, f"Car: {c['model']} - {c['plate']}")
+    pdf.drawString(50, 690, f"Start: {c['start_date']}")
+    pdf.drawString(50, 670, f"End: {c['end_date']}")
+
+    pdf.drawString(50, 640, f"Total: {c['total_price']}")
+    pdf.drawString(50, 620, f"Paid: {c['paid_amount']}")
+    pdf.drawString(50, 600, f"Remaining: {c['remaining']}")
+
+    pdf.drawString(50, 560, f"Status: {c['status']}")
+
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(buffer,
+                     as_attachment=True,
+                     download_name=f"contract_{contract_id}.pdf",
+                     mimetype="application/pdf")
+
+
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)
