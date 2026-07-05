@@ -130,8 +130,17 @@ def home():
     if "user" not in session:
         return redirect("/login")
 
+    # إذا كان المستخدم بائعاً يمنع من صفحة السيارات
+    if session["role"] == "seller":
+        return redirect("/contracts")
+
     conn = get_db()
-    cars = conn.execute("SELECT * FROM cars").fetchall()
+
+    cars = conn.execute("""
+        SELECT * FROM cars
+        ORDER BY id DESC
+    """).fetchall()
+
     conn.close()
 
     return render_template("index.html", cars=cars)
