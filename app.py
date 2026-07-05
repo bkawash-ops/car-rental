@@ -40,23 +40,23 @@ def init_db():
         )
     """)
 
-    # contracts (مهم: أضفنا الدفعة والمتبقي)
+    # contracts
     conn.execute("""
-    CREATE TABLE IF NOT EXISTS contracts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        customer_name TEXT,
-        customer_phone TEXT,
-        car_id INTEGER,
-        start_date TEXT,
-        end_date TEXT,
-        total_price REAL,
-        paid_amount REAL DEFAULT 0,
-        remaining REAL DEFAULT 0,
-        status TEXT
-    )
+        CREATE TABLE IF NOT EXISTS contracts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            customer_name TEXT,
+            customer_phone TEXT,
+            car_id INTEGER,
+            start_date TEXT,
+            end_date TEXT,
+            total_price REAL,
+            paid_amount REAL DEFAULT 0,
+            remaining REAL DEFAULT 0,
+            status TEXT
+        )
     """)
 
-    # default users
+    # users الافتراضيين
     users = [
         ("admin", "1234", "admin"),
         ("seller", "1234", "seller")
@@ -125,7 +125,7 @@ def logout():
     return redirect("/login")
 
 
-# ---------------- HOME ----------------
+# ---------------- HOME (CARS) ----------------
 @app.route("/")
 def home():
 
@@ -213,17 +213,14 @@ def create_contract():
 
     conn = get_db()
 
-    # 1) أخذ القيم من الفورم
-    total = float(request.form["total_price"])
-    paid = float(request.form.get("paid_amount", 0))
-
-    # 2) حساب المتبقي
+    total = float(request.form["total_price"] or 0)
+    paid = float(request.form.get("paid_amount", 0) or 0)
     remaining = total - paid
 
-    # 3) إدخال العقد مع الدفعة والمتبقي
     conn.execute("""
         INSERT INTO contracts 
-        (customer_name, customer_phone, car_id, start_date, end_date, total_price, paid_amount, remaining, status)
+        (customer_name, customer_phone, car_id, start_date, end_date,
+         total_price, paid_amount, remaining, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         request.form["customer_name"],
@@ -237,7 +234,6 @@ def create_contract():
         "Active"
     ))
 
-    # 4) تغيير حالة السيارة إلى Rented
     conn.execute("""
         UPDATE cars SET status='Rented' WHERE id=?
     """, (request.form["car_id"],))
