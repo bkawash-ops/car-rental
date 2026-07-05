@@ -213,14 +213,17 @@ def create_contract():
 
     conn = get_db()
 
+    # 1) أخذ القيم من الفورم
     total = float(request.form["total_price"])
     paid = float(request.form.get("paid_amount", 0))
+
+    # 2) حساب المتبقي
     remaining = total - paid
 
+    # 3) إدخال العقد مع الدفعة والمتبقي
     conn.execute("""
         INSERT INTO contracts 
-        (customer_name, customer_phone, car_id, start_date, end_date,
-         total_price, paid_amount, remaining_amount, status)
+        (customer_name, customer_phone, car_id, start_date, end_date, total_price, paid_amount, remaining, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         request.form["customer_name"],
@@ -234,6 +237,7 @@ def create_contract():
         "Active"
     ))
 
+    # 4) تغيير حالة السيارة إلى Rented
     conn.execute("""
         UPDATE cars SET status='Rented' WHERE id=?
     """, (request.form["car_id"],))
