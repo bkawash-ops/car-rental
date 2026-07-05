@@ -72,9 +72,6 @@
         .badge {
             padding: 5px 10px;
             border-radius: 20px;
-        }
-
-        .active {
             background: #dcfce7;
             color: #166534;
         }
@@ -96,81 +93,86 @@
 
 <div class="container">
 
-    <!-- CREATE CONTRACT -->
-    <div class="card">
-        <h2>➕ إنشاء عقد جديد</h2>
+<!-- CREATE CONTRACT -->
+<div class="card">
+    <h2>➕ إنشاء عقد</h2>
 
-        <form method="POST" action="/create_contract">
+    <form method="POST" action="/create_contract">
 
-            <input name="customer_name" placeholder="اسم العميل" required>
-            <input name="customer_phone" placeholder="رقم الهاتف" required>
+        <input name="customer_name" placeholder="اسم العميل" required>
+        <input name="customer_phone" placeholder="رقم الهاتف" required>
 
-            <!-- الدفع -->
-            <input name="paid_amount" placeholder="الدفعة المدفوعة" value="0" oninput="calcPrice()">
+        <!-- الدفعة -->
+        <input name="paid_amount" placeholder="الدفعة المدفوعة" value="0" oninput="calcPrice()">
 
-            <!-- السيارة -->
-            <select name="car_id" required onchange="calcPrice()">
-                <option value="" data-price="0">🚗 اختر سيارة</option>
+        <!-- السيارة -->
+        <select name="car_id" required onchange="calcPrice()">
+            <option value="" data-price="0">🚗 اختر سيارة</option>
 
-                {% for car in cars %}
-                    <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
-                        {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD/day)
-                    </option>
-                {% endfor %}
-            </select>
-
-            <input type="date" name="start_date" required onchange="calcPrice()">
-            <input type="date" name="end_date" required onchange="calcPrice()">
-
-            <input name="total_price" placeholder="الإجمالي" readonly>
-            <input name="remaining" placeholder="المتبقي" readonly>
-
-            <br><br>
-
-            <button class="btn btn-add" type="submit">
-                ➕ حفظ العقد
-            </button>
-        </form>
-    </div>
-
-    <!-- CONTRACTS LIST -->
-    <div class="card">
-        <h2>📑 قائمة العقود</h2>
-
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>Car</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Days</th>
-                <th>Total</th>
-                <th>Paid</th>
-                <th>Remaining</th>
-                <th>Status</th>
-            </tr>
-
-            {% for c in contracts %}
-            <tr>
-                <td>{{ c.id }}</td>
-                <td>{{ c.customer_name }}</td>
-                <td>{{ c.customer_phone }}</td>
-                <td>{{ c.model }} - {{ c.plate }}</td>
-                <td>{{ c.start_date }}</td>
-                <td>{{ c.end_date }}</td>
-                <td>{{ c.days }}</td>
-                <td>{{ c.total_price }}</td>
-                <td>{{ c.paid_amount }}</td>
-                <td>{{ c.remaining }}</td>
-                <td>
-                    <span class="badge active">{{ c.status }}</span>
-                </td>
-            </tr>
+            {% for car in cars %}
+                <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
+                    {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD/day)
+                </option>
             {% endfor %}
-        </table>
-    </div>
+        </select>
+
+        <input type="date" name="start_date" required onchange="calcPrice()">
+        <input type="date" name="end_date" required onchange="calcPrice()">
+
+        <input name="total_price" placeholder="الإجمالي" readonly>
+        <input name="remaining" placeholder="المتبقي" readonly>
+
+        <br><br>
+
+        <button class="btn btn-add" type="submit">
+            ➕ حفظ العقد
+        </button>
+    </form>
+</div>
+
+<!-- CONTRACTS TABLE -->
+<div class="card">
+    <h2>📑 قائمة العقود</h2>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Car</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Days</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Remaining</th>
+            <th>Status</th>
+            <th>Print</th>
+        </tr>
+
+        {% for c in contracts %}
+        <tr>
+            <td>{{ c.id }}</td>
+            <td>{{ c.customer_name }}</td>
+            <td>{{ c.customer_phone }}</td>
+            <td>{{ c.model }} - {{ c.plate }}</td>
+            <td>{{ c.start_date }}</td>
+            <td>{{ c.end_date }}</td>
+            <td>{{ c.days }}</td>
+            <td>{{ c.total_price }}</td>
+            <td>{{ c.paid_amount }}</td>
+            <td>{{ c.remaining }}</td>
+            <td><span class="badge">{{ c.status }}</span></td>
+            <td>
+                <a href="/print_contract/{{ c.id }}" target="_blank">
+                    🖨 Print
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+
+    </table>
+</div>
 
 </div>
 
@@ -180,6 +182,7 @@ function calcPrice() {
     let car = document.querySelector('[name="car_id"]');
     let start = document.querySelector('[name="start_date"]').value;
     let end = document.querySelector('[name="end_date"]').value;
+
     let paid = parseFloat(document.querySelector('[name="paid_amount"]').value || 0);
 
     let totalField = document.querySelector('[name="total_price"]');
