@@ -5,6 +5,7 @@ app = Flask(__name__)
 app.secret_key = "car_rental_secret_2026"
 DB_NAME = "car_rental.db"
 
+
 # ---------------- DB ----------------
 def get_db():
     conn = sqlite3.connect(DB_NAME)
@@ -84,7 +85,6 @@ with app.app_context():
 def login():
 
     if request.method == "POST":
-
         username = request.form["username"]
         password = request.form["password"]
 
@@ -125,14 +125,14 @@ def logout():
     return redirect("/login")
 
 
-# ---------------- HOME (CARS) ----------------
+# ---------------- HOME (ADMIN ONLY) ----------------
 @app.route("/")
 def home():
 
     if "user" not in session:
         return redirect("/login")
 
-    if session["role"] == "seller":
+    if session["role"] != "admin":
         return redirect("/contracts")
 
     conn = get_db()
@@ -150,14 +150,13 @@ def add_car():
 
     conn.execute("""
         INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, 'Available', ?)
     """, (
         request.form["type"],
         request.form["model"],
         request.form["color"],
         request.form["plate"],
         request.form["fuel"],
-        request.form["status"],
         request.form["daily_rate"]
     ))
 
@@ -179,7 +178,7 @@ def delete_car(car_id):
     return redirect("/")
 
 
-# ---------------- CONTRACTS ----------------
+# ---------------- CONTRACTS (SELLER + ADMIN VIEW DIFFERENT DATA) ----------------
 @app.route("/contracts")
 def contracts():
 
@@ -188,10 +187,12 @@ def contracts():
 
     conn = get_db()
 
+    # السيارات المتاحة فقط للبائع
     cars = conn.execute("""
         SELECT * FROM cars WHERE status='Available'
     """).fetchall()
 
+    # كل العقود
     contracts = conn.execute("""
         SELECT contracts.*,
                cars.model,
@@ -213,8 +214,8 @@ def create_contract():
 
     conn = get_db()
 
-    total = float(request.form["total_price"] or 0)
-    paid = float(request.form.get("paid_amount", 0) or 0)
+    total = float(request.form.get("total_price") or 0)
+    paid = float(request.form.get("paid_amount") or 0)
     remaining = total - paid
 
     conn.execute("""
