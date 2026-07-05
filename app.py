@@ -40,7 +40,7 @@ def init_db():
         )
     """)
 
-    # contracts
+    # contracts (مهم: أضفنا الدفعة والمتبقي)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS contracts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +50,8 @@ def init_db():
             start_date TEXT,
             end_date TEXT,
             total_price REAL,
+            paid_amount REAL,
+            remaining_amount REAL,
             status TEXT
         )
     """)
@@ -123,24 +125,18 @@ def logout():
     return redirect("/login")
 
 
-# ---------------- HOME (CARS) ----------------
+# ---------------- HOME ----------------
 @app.route("/")
 def home():
 
     if "user" not in session:
         return redirect("/login")
 
-    # إذا كان المستخدم بائعاً يمنع من صفحة السيارات
     if session["role"] == "seller":
         return redirect("/contracts")
 
     conn = get_db()
-
-    cars = conn.execute("""
-        SELECT * FROM cars
-        ORDER BY id DESC
-    """).fetchall()
-
+    cars = conn.execute("SELECT * FROM cars ORDER BY id DESC").fetchall()
     conn.close()
 
     return render_template("index.html", cars=cars)
@@ -217,17 +213,24 @@ def create_contract():
 
     conn = get_db()
 
+    total = float(request.form["total_price"])
+    paid = float(request.form.get("paid_amount", 0))
+    remaining = total - paid
+
     conn.execute("""
         INSERT INTO contracts 
-        (customer_name, customer_phone, car_id, start_date, end_date, total_price, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (customer_name, customer_phone, car_id, start_date, end_date,
+         total_price, paid_amount, remaining_amount, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         request.form["customer_name"],
         request.form["customer_phone"],
         request.form["car_id"],
         request.form["start_date"],
         request.form["end_date"],
-        request.form["total_price"],
+        total,
+        paid,
+        remaining,
         "Active"
     ))
 
