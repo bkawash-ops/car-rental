@@ -28,18 +28,19 @@ def init_db():
     """)
 
     # cars
+    # سيارات افتراضية
+cars = [
+    ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
+    ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
+    ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
+]
+
+for c in cars:
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS cars (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT,
-            model TEXT,
-            color TEXT,
-            plate TEXT,
-            fuel TEXT,
-            status TEXT,
-            daily_rate REAL
-        )
-    """)
+        INSERT OR IGNORE INTO cars
+        (type, model, color, plate, fuel, status, daily_rate)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, c)
 
     # contracts
     conn.execute("""
