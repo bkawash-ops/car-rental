@@ -58,23 +58,32 @@ def init_db():
     """)
 
     # ---------------- DEFAULT USERS ----------------
-    conn.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('admin','1234','admin')")
-    conn.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('seller','1234','seller')")
+    users = [
+        ("admin", "1234", "admin"),
+        ("seller", "1234", "seller")
+    ]
 
-    # ---------------- DEFAULT CARS (ONLY ONCE) ----------------
-    exists = conn.execute("SELECT COUNT(*) AS c FROM cars").fetchone()["c"]
+    for u in users:
+        try:
+            conn.execute(
+                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+                u
+            )
+        except:
+            pass
 
-    if exists == 0:
-        cars = [
-            ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
-            ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
-            ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
-        ]
+    # ---------------- DEFAULT CARS (مهم جداً) ----------------
+    cars = [
+        ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
+        ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
+        ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
+    ]
 
-        conn.executemany("""
+    for c in cars:
+        conn.execute("""
             INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, cars)
+        """, c)
 
     conn.commit()
     conn.close()
@@ -89,24 +98,35 @@ with app.app_context():
 def login():
     if request.method == "POST":
 
-        u = request.form["username"]
-        p = request.form["password"]
+        username = request.form["username"]
+        password = request.form["password"]
 
         conn = get_db()
         user = conn.execute(
             "SELECT * FROM users WHERE username=? AND password=?",
-            (u, p)
+            (username, password)
         ).fetchone()
         conn.close()
 
         if user:
             session["user"] = user["username"]
             session["role"] = user["role"]
-            return redirect("/contracts")
+            return redirect("/dashboard")
 
         return "خطأ في البيانات"
 
     return render_template("login.html")
+
+
+# ---------------- DASHBOARD ----------------
+@app.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect("/login")
+
+    if session["role"] == "admin":
+        return redirect("/")
+    return redirect("/contracts")
 
 
 # ---------------- LOGOUT ----------------
@@ -114,6 +134,44 @@ def login():
 def logout():
     session.clear()
     return redirect("/login")
+
+
+# ---------------- HOME (ADMIN ONLY) ----------------
+@app.route("/")
+def home():
+    if "user" not in session:
+        return redirect("/login")
+
+    if session["role"] != "admin":
+        return redirect("/contracts")
+
+    conn = get_db()
+    cars = conn.execute("SELECT * FROM cars ORDER BY id DESC").fetchall()
+    conn.close()
+
+    return render_template("index.html", cars=cars)
+
+
+# ---------------- ADD CAR ----------------
+@app.route("/add", methods=["POST"])
+def add_car():
+    conn = get_db()
+
+    conn.execute("""
+        INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
+        VALUES (?, ?, ?, ?, ?, 'Available', ?)
+    """, (
+        request.form["type"],
+        request.form["model"],
+        request.form["color"],
+        request.form["plate"],
+        request.form["fuel"],
+        request.form["daily_rate"]
+    ))
+
+    conn.commit()
+    conn.close()
+    return redirect("/")
 
 
 # ---------------- CONTRACTS ----------------
@@ -132,7 +190,7 @@ def contracts():
         SELECT contracts.*,
                cars.model,
                cars.plate,
-               (julianday(end_date)-julianday(start_date)+1) AS days
+               (julianday(end_date) - julianday(start_date) + 1) AS days
         FROM contracts
         LEFT JOIN cars ON cars.id = contracts.car_id
         ORDER BY contracts.id DESC
@@ -151,10 +209,11 @@ def create_contract():
 
     total = float(request.form.get("total_price") or 0)
     paid = float(request.form.get("paid_amount") or 0)
+
     remaining = total - paid
 
     conn.execute("""
-        INSERT INTO contracts
+        INSERT INTO contracts 
         (customer_name, customer_phone, car_id, start_date, end_date,
          total_price, paid_amount, remaining, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -180,31 +239,5 @@ def create_contract():
     return redirect("/contracts")
 
 
-# ---------------- PRINT CONTRACT ----------------
-@app.route("/print_contract/<int:id>")
-def print_contract(id):
-
-    conn = get_db()
-
-    contract = conn.execute("""
-        SELECT contracts.*,
-               cars.model,
-               cars.plate,
-               cars.daily_rate,
-               (julianday(end_date)-julianday(start_date)+1) AS days
-        FROM contracts
-        LEFT JOIN cars ON cars.id = contracts.car_id
-        WHERE contracts.id=?
-    """, (id,)).fetchone()
-
-    conn.close()
-
-    if not contract:
-        return "Contract not found"
-
-    return render_template("invoice.html", c=contract)
-
-
-# ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)
