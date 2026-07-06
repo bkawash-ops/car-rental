@@ -1,87 +1,94 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-    <title>Contracts System</title>
+<meta charset="UTF-8">
+<title>نظام العقود</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background: #f4f6f8;
-        }
+<style>
+    body {
+        font-family: Arial;
+        margin: 0;
+        background: #f4f6f8;
+    }
 
-        .navbar {
-            background: #111827;
-            color: white;
-            padding: 15px 20px;
-            font-size: 22px;
-            font-weight: bold;
-        }
+    .navbar {
+        background: #111827;
+        color: white;
+        padding: 15px;
+        font-size: 20px;
+        font-weight: bold;
+    }
 
-        .navbar a {
-            float: right;
-            color: white;
-            margin-left: 15px;
-            text-decoration: none;
-        }
+    .navbar a {
+        float: right;
+        color: white;
+        margin-left: 15px;
+        text-decoration: none;
+    }
 
-        .container {
-            padding: 20px;
-        }
+    .container {
+        padding: 20px;
+    }
 
-        .card {
-            background: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-        }
+    .card {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+    }
 
-        input, select {
-            padding: 10px;
-            margin: 5px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-        }
+    input, select {
+        padding: 10px;
+        margin: 5px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+    }
 
-        .btn {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+    .btn-add {
+        background: #16a34a;
+        color: white;
+        border: none;
+        padding: 10px;
+        border-radius: 6px;
+        cursor: pointer;
+    }
 
-        .btn-add {
-            background: #16a34a;
-            color: white;
-        }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
 
-        th, td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
+    th {
+        background: #f3f4f6;
+    }
 
-        th {
-            background: #f3f4f6;
-        }
+    .badge {
+        background: #dcfce7;
+        color: #166534;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
 
-        .badge {
-            padding: 5px 10px;
-            border-radius: 20px;
-            background: #dcfce7;
-            color: #166534;
-        }
-    </style>
+    .print-btn {
+        background: #111827;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 6px;
+        text-decoration: none;
+    }
+</style>
 </head>
 
 <body>
 
 <div class="navbar">
-    📄 نظام تأجير السيارات
+    📄 نظام العقود
 
     {% if session['role'] == 'admin' %}
         <a href="/">🚗 السيارات</a>
@@ -102,16 +109,14 @@
         <input name="customer_name" placeholder="اسم العميل" required>
         <input name="customer_phone" placeholder="رقم الهاتف" required>
 
-        <!-- الدفعة -->
-        <input name="paid_amount" placeholder="الدفعة المدفوعة" value="0" oninput="calcPrice()">
+        <input name="paid_amount" placeholder="الدفعة" value="0" oninput="calcPrice()">
 
-        <!-- السيارة -->
         <select name="car_id" required onchange="calcPrice()">
-            <option value="" data-price="0">🚗 اختر سيارة</option>
+            <option value="" data-price="0">اختر سيارة</option>
 
             {% for car in cars %}
                 <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
-                    {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD/day)
+                    {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD)
                 </option>
             {% endfor %}
         </select>
@@ -124,30 +129,30 @@
 
         <br><br>
 
-        <button class="btn btn-add" type="submit">
+        <button class="btn-add" type="submit">
             ➕ حفظ العقد
         </button>
     </form>
 </div>
 
-<!-- CONTRACTS TABLE -->
+<!-- TABLE -->
 <div class="card">
-    <h2>📑 قائمة العقود</h2>
+    <h2>📑 العقود</h2>
 
     <table>
         <tr>
             <th>ID</th>
-            <th>Customer</th>
-            <th>Phone</th>
-            <th>Car</th>
-            <th>Start</th>
-            <th>End</th>
-            <th>Days</th>
-            <th>Total</th>
-            <th>Paid</th>
-            <th>Remaining</th>
-            <th>Status</th>
-            <th>Print</th>
+            <th>العميل</th>
+            <th>الهاتف</th>
+            <th>السيارة</th>
+            <th>من</th>
+            <th>إلى</th>
+            <th>أيام</th>
+            <th>الإجمالي</th>
+            <th>المدفوع</th>
+            <th>المتبقي</th>
+            <th>الحالة</th>
+            <th>طباعة</th>
         </tr>
 
         {% for c in contracts %}
@@ -164,13 +169,12 @@
             <td>{{ c.remaining }}</td>
             <td><span class="badge">{{ c.status }}</span></td>
             <td>
-                <a href="/print_contract/{{ c.id }}" target="_blank">
-                    🖨 Print
+                <a class="print-btn" href="/print_contract/{{ c.id }}" target="_blank">
+                    🖨 طباعة
                 </a>
             </td>
         </tr>
         {% endfor %}
-
     </table>
 </div>
 
