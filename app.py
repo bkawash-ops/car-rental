@@ -237,7 +237,24 @@ def create_contract():
     conn.close()
 
     return redirect("/contracts")
+@app.route("/print_contract/<int:id>")
+def print_contract(id):
 
+    conn = get_db()
+
+    c = conn.execute("""
+        SELECT contracts.*,
+               cars.model,
+               cars.plate,
+               (julianday(end_date)-julianday(start_date)+1) AS days
+        FROM contracts
+        LEFT JOIN cars ON cars.id = contracts.car_id
+        WHERE contracts.id=?
+    """, (id,)).fetchone()
+
+    conn.close()
+
+    return render_template("invoice.html", c=c)
 
 if __name__ == "__main__":
     app.run(debug=True)
