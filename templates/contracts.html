@@ -109,7 +109,7 @@ th {
     <input name="customer_name" placeholder="اسم العميل" required>
     <input name="customer_phone" placeholder="رقم الهاتف" required>
 
-    <!-- الدفع -->
+    <!-- الدفعة -->
     <input name="paid_amount" placeholder="الدفعة" value="0" oninput="calcPrice()">
 
     <!-- السيارة -->
@@ -177,8 +177,8 @@ th {
     </td>
 </tr>
 {% endfor %}
-
 </table>
+
 </div>
 
 </div>
@@ -202,7 +202,7 @@ function calcPrice() {
 
     let days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
-    if (days <= 0) {
+    if (days < 1 || isNaN(days)) {
         totalField.value = "";
         remainingField.value = "";
         return;
@@ -216,6 +216,9 @@ function calcPrice() {
     totalField.value = total.toFixed(2);
     remainingField.value = remaining.toFixed(2);
 }
+
+// مهم جداً: تحديث عند تغيير الدفعة
+document.querySelector('[name="paid_amount"]').addEventListener("input", calcPrice);
 </script>
 
 </body>
