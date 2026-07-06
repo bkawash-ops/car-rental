@@ -183,7 +183,7 @@ def contracts():
     conn = get_db()
 
     cars = conn.execute("""
-        SELECT * FROM cars WHERE status='Available'
+        SELECT * FROM cars 
     """).fetchall()
 
     contracts = conn.execute("""
