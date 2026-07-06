@@ -166,7 +166,7 @@ def create_contract():
 
 
 # ---------------- PRINT ----------------
-@app.route("/print/<int:id>")
+@app.route("/print_contract/<int:id>")
 def print_contract(id):
 
     conn = get_db()
