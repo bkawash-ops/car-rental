@@ -13,10 +13,11 @@ def get_db():
     return conn
 
 
-# ---------------- INIT ----------------
+# ---------------- INIT DATABASE ----------------
 def init_db():
     conn = get_db()
 
+    # USERS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,6 +27,7 @@ def init_db():
         )
     """)
 
+    # CARS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS cars (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,6 +41,7 @@ def init_db():
         )
     """)
 
+    # CONTRACTS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS contracts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,25 +51,30 @@ def init_db():
             start_date TEXT,
             end_date TEXT,
             total_price REAL,
-            paid_amount REAL,
-            remaining REAL,
+            paid_amount REAL DEFAULT 0,
+            remaining REAL DEFAULT 0,
             status TEXT
         )
     """)
 
-    conn.execute("DELETE FROM cars")
+    # ---------------- DEFAULT USERS ----------------
+    conn.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('admin','1234','admin')")
+    conn.execute("INSERT OR IGNORE INTO users (username, password, role) VALUES ('seller','1234','seller')")
 
-    cars = [
-        ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
-        ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
-        ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
-    ]
+    # ---------------- DEFAULT CARS (ONLY ONCE) ----------------
+    exists = conn.execute("SELECT COUNT(*) AS c FROM cars").fetchone()["c"]
 
-    for c in cars:
-        conn.execute("""
+    if exists == 0:
+        cars = [
+            ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
+            ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
+            ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
+        ]
+
+        conn.executemany("""
             INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, c)
+        """, cars)
 
     conn.commit()
     conn.close()
@@ -80,11 +88,15 @@ with app.app_context():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+
         u = request.form["username"]
         p = request.form["password"]
 
         conn = get_db()
-        user = conn.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p)).fetchone()
+        user = conn.execute(
+            "SELECT * FROM users WHERE username=? AND password=?",
+            (u, p)
+        ).fetchone()
         conn.close()
 
         if user:
@@ -92,7 +104,7 @@ def login():
             session["role"] = user["role"]
             return redirect("/contracts")
 
-        return "خطأ"
+        return "خطأ في البيانات"
 
     return render_template("login.html")
 
@@ -112,7 +124,9 @@ def contracts():
 
     conn = get_db()
 
-    cars = conn.execute("SELECT * FROM cars WHERE status='Available'").fetchall()
+    cars = conn.execute("""
+        SELECT * FROM cars WHERE status='Available'
+    """).fetchall()
 
     contracts = conn.execute("""
         SELECT contracts.*,
@@ -135,8 +149,8 @@ def create_contract():
 
     conn = get_db()
 
-    total = float(request.form["total_price"] or 0)
-    paid = float(request.form["paid_amount"] or 0)
+    total = float(request.form.get("total_price") or 0)
+    paid = float(request.form.get("paid_amount") or 0)
     remaining = total - paid
 
     conn.execute("""
@@ -156,8 +170,9 @@ def create_contract():
         "Active"
     ))
 
-    conn.execute("UPDATE cars SET status='Rented' WHERE id=?",
-                 (request.form["car_id"],))
+    conn.execute("""
+        UPDATE cars SET status='Rented' WHERE id=?
+    """, (request.form["car_id"],))
 
     conn.commit()
     conn.close()
@@ -165,16 +180,17 @@ def create_contract():
     return redirect("/contracts")
 
 
-# ---------------- PRINT ----------------
+# ---------------- PRINT CONTRACT ----------------
 @app.route("/print_contract/<int:id>")
 def print_contract(id):
 
     conn = get_db()
 
-    c = conn.execute("""
+    contract = conn.execute("""
         SELECT contracts.*,
                cars.model,
                cars.plate,
+               cars.daily_rate,
                (julianday(end_date)-julianday(start_date)+1) AS days
         FROM contracts
         LEFT JOIN cars ON cars.id = contracts.car_id
@@ -183,8 +199,12 @@ def print_contract(id):
 
     conn.close()
 
-    return render_template("invoice.html", c=c)
+    if not contract:
+        return "Contract not found"
+
+    return render_template("invoice.html", c=contract)
 
 
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)
