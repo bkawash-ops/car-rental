@@ -5,83 +5,83 @@
 <title>نظام العقود</title>
 
 <style>
-    body {
-        font-family: Arial;
-        margin: 0;
-        background: #f4f6f8;
-    }
+body {
+    font-family: Arial;
+    margin: 0;
+    background: #f4f6f8;
+}
 
-    .navbar {
-        background: #111827;
-        color: white;
-        padding: 15px;
-        font-size: 20px;
-        font-weight: bold;
-    }
+.navbar {
+    background: #111827;
+    color: white;
+    padding: 15px;
+    font-size: 20px;
+    font-weight: bold;
+}
 
-    .navbar a {
-        float: right;
-        color: white;
-        margin-left: 15px;
-        text-decoration: none;
-    }
+.navbar a {
+    float: right;
+    color: white;
+    margin-left: 15px;
+    text-decoration: none;
+}
 
-    .container {
-        padding: 20px;
-    }
+.container {
+    padding: 20px;
+}
 
-    .card {
-        background: white;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 10px;
-    }
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+}
 
-    input, select {
-        padding: 10px;
-        margin: 5px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-    }
+input, select {
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
 
-    .btn-add {
-        background: #16a34a;
-        color: white;
-        border: none;
-        padding: 10px;
-        border-radius: 6px;
-        cursor: pointer;
-    }
+.btn-add {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-    th, td {
-        padding: 10px;
-        border-bottom: 1px solid #ddd;
-        text-align: center;
-    }
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
 
-    th {
-        background: #f3f4f6;
-    }
+th {
+    background: #f3f4f6;
+}
 
-    .badge {
-        background: #dcfce7;
-        color: #166534;
-        padding: 5px 10px;
-        border-radius: 20px;
-    }
+.badge {
+    background: #dcfce7;
+    color: #166534;
+    padding: 5px 10px;
+    border-radius: 20px;
+}
 
-    .print-btn {
-        background: #111827;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 6px;
-        text-decoration: none;
-    }
+.print-btn {
+    background: #111827;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+}
 </style>
 </head>
 
@@ -102,80 +102,83 @@
 
 <!-- CREATE CONTRACT -->
 <div class="card">
-    <h2>➕ إنشاء عقد</h2>
+<h2>➕ إنشاء عقد</h2>
 
-    <form method="POST" action="/create_contract">
+<form method="POST" action="/create_contract">
 
-        <input name="customer_name" placeholder="اسم العميل" required>
-        <input name="customer_phone" placeholder="رقم الهاتف" required>
+    <input name="customer_name" placeholder="اسم العميل" required>
+    <input name="customer_phone" placeholder="رقم الهاتف" required>
 
-        <input name="paid_amount" placeholder="الدفعة" value="0" oninput="calcPrice()">
+    <!-- الدفع -->
+    <input name="paid_amount" placeholder="الدفعة" value="0" oninput="calcPrice()">
 
-        <select name="car_id" required onchange="calcPrice()">
-            <option value="" data-price="0">اختر سيارة</option>
+    <!-- السيارة -->
+    <select name="car_id" required onchange="calcPrice()">
+        <option value="" data-price="0">اختر سيارة</option>
 
-            {% for car in cars %}
-                <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
-                    {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD)
-                </option>
-            {% endfor %}
-        </select>
+        {% for car in cars %}
+            <option value="{{ car.id }}" data-price="{{ car.daily_rate }}">
+                {{ car.model }} - {{ car.plate }} ({{ car.daily_rate }} JOD)
+            </option>
+        {% endfor %}
+    </select>
 
-        <input type="date" name="start_date" required onchange="calcPrice()">
-        <input type="date" name="end_date" required onchange="calcPrice()">
+    <input type="date" name="start_date" required onchange="calcPrice()">
+    <input type="date" name="end_date" required onchange="calcPrice()">
 
-        <input name="total_price" placeholder="الإجمالي" readonly>
-        <input name="remaining" placeholder="المتبقي" readonly>
+    <input name="total_price" placeholder="الإجمالي" readonly>
+    <input name="remaining" placeholder="المتبقي" readonly>
 
-        <br><br>
+    <br><br>
 
-        <button class="btn-add" type="submit">
-            ➕ حفظ العقد
-        </button>
-    </form>
+    <button class="btn-add" type="submit">
+        ➕ حفظ العقد
+    </button>
+</form>
 </div>
 
 <!-- TABLE -->
 <div class="card">
-    <h2>📑 العقود</h2>
+<h2>📑 العقود</h2>
 
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>العميل</th>
-            <th>الهاتف</th>
-            <th>السيارة</th>
-            <th>من</th>
-            <th>إلى</th>
-            <th>أيام</th>
-            <th>الإجمالي</th>
-            <th>المدفوع</th>
-            <th>المتبقي</th>
-            <th>الحالة</th>
-            <th>طباعة</th>
-        </tr>
+<table>
+<tr>
+    <th>ID</th>
+    <th>العميل</th>
+    <th>الهاتف</th>
+    <th>السيارة</th>
+    <th>من</th>
+    <th>إلى</th>
+    <th>أيام</th>
+    <th>الإجمالي</th>
+    <th>المدفوع</th>
+    <th>المتبقي</th>
+    <th>الحالة</th>
+    <th>طباعة</th>
+</tr>
 
-        {% for c in contracts %}
-        <tr>
-            <td>{{ c.id }}</td>
-            <td>{{ c.customer_name }}</td>
-            <td>{{ c.customer_phone }}</td>
-            <td>{{ c.model }} - {{ c.plate }}</td>
-            <td>{{ c.start_date }}</td>
-            <td>{{ c.end_date }}</td>
-            <td>{{ c.days }}</td>
-            <td>{{ c.total_price }}</td>
-            <td>{{ c.paid_amount }}</td>
-            <td>{{ c.remaining }}</td>
-            <td><span class="badge">{{ c.status }}</span></td>
-            <td>
-                <a class="print-btn" href="/print_contract/{{ c.id }}" target="_blank">
-                    🖨 طباعة
-                </a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+{% for c in contracts %}
+<tr>
+    <td>{{ c.id }}</td>
+    <td>{{ c.customer_name }}</td>
+    <td>{{ c.customer_phone }}</td>
+    <td>{{ c.model }} - {{ c.plate }}</td>
+    <td>{{ c.start_date }}</td>
+    <td>{{ c.end_date }}</td>
+    <td>{{ c.days }}</td>
+    <td>{{ c.total_price }}</td>
+    <td>{{ c.paid_amount }}</td>
+    <td>{{ c.remaining }}</td>
+    <td><span class="badge">{{ c.status }}</span></td>
+    <td>
+        <a class="print-btn" href="/print_contract/{{ c.id }}" target="_blank">
+            🖨 طباعة
+        </a>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
 </div>
 
 </div>
@@ -197,7 +200,7 @@ function calcPrice() {
     let startDate = new Date(start);
     let endDate = new Date(end);
 
-    let days = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    let days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
     if (days <= 0) {
         totalField.value = "";
