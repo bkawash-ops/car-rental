@@ -26,9 +26,7 @@ body {
     text-decoration: none;
 }
 
-.container {
-    padding: 20px;
-}
+.container { padding: 20px; }
 
 .card {
     background: white;
@@ -88,14 +86,14 @@ th {
 <body>
 
 <div class="navbar">
-    📄 نظام العقود
+📄 نظام العقود
 
-    {% if session['role'] == 'admin' %}
-        <a href="/">🚗 السيارات</a>
-    {% endif %}
+{% if session.get('role') == 'admin' %}
+    <a href="/">🚗 السيارات</a>
+{% endif %}
 
-    <a href="/contracts">📄 العقود</a>
-    <a href="/logout">🚪 خروج</a>
+<a href="/contracts">📄 العقود</a>
+<a href="/logout">🚪 خروج</a>
 </div>
 
 <div class="container">
@@ -109,10 +107,9 @@ th {
     <input name="customer_name" placeholder="اسم العميل" required>
     <input name="customer_phone" placeholder="رقم الهاتف" required>
 
-    <!-- الدفعة -->
     <input name="paid_amount" placeholder="الدفعة" value="0" oninput="calcPrice()">
 
-    <!-- السيارة -->
+    <!-- مهم: عرض كل السيارات بدون فلترة -->
     <select name="car_id" required onchange="calcPrice()">
         <option value="" data-price="0">اختر سيارة</option>
 
@@ -131,9 +128,7 @@ th {
 
     <br><br>
 
-    <button class="btn-add" type="submit">
-        ➕ حفظ العقد
-    </button>
+    <button class="btn-add" type="submit">➕ حفظ العقد</button>
 </form>
 </div>
 
@@ -202,7 +197,7 @@ function calcPrice() {
 
     let days = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 
-    if (days < 1 || isNaN(days)) {
+    if (days <= 0 || isNaN(days)) {
         totalField.value = "";
         remainingField.value = "";
         return;
@@ -217,8 +212,13 @@ function calcPrice() {
     remainingField.value = remaining.toFixed(2);
 }
 
-// مهم جداً: تحديث عند تغيير الدفعة
-document.querySelector('[name="paid_amount"]').addEventListener("input", calcPrice);
+// حماية من الخطأ إذا الصفحة لم تجهز
+window.onload = function () {
+    let paid = document.querySelector('[name="paid_amount"]');
+    if (paid) {
+        paid.addEventListener("input", calcPrice);
+    }
+};
 </script>
 
 </body>
