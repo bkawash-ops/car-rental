@@ -199,7 +199,37 @@ def contracts():
     conn.close()
 
     return render_template("contracts.html", cars=cars, contracts=contracts)
+@app.route("/close_contract/<int:contract_id>")
+def close_contract(contract_id):
 
+    conn = get_db()
+
+    # 1. نجيب العقد
+    contract = conn.execute(
+        "SELECT * FROM contracts WHERE id=?",
+        (contract_id,)
+    ).fetchone()
+
+    if contract:
+
+        # 2. نرجع السيارة Available
+        conn.execute("""
+            UPDATE cars
+            SET status='Available'
+            WHERE id=?
+        """, (contract["car_id"],))
+
+        # 3. نغلق العقد
+        conn.execute("""
+            UPDATE contracts
+            SET status='Closed'
+            WHERE id=?
+        """, (contract_id,))
+
+        conn.commit()
+
+    conn.close()
+    return redirect("/contracts")
 
 # ---------------- CREATE CONTRACT ----------------
 @app.route("/create_contract", methods=["POST"])
