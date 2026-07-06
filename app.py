@@ -1,7 +1,5 @@
-from flask import Flask, render_template, request, redirect, session, send_file
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
-from io import BytesIO
-from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 app.secret_key = "car_rental_secret_2026"
@@ -15,11 +13,10 @@ def get_db():
     return conn
 
 
-# ---------------- INIT DATABASE ----------------
+# ---------------- INIT ----------------
 def init_db():
     conn = get_db()
 
-    # USERS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +26,6 @@ def init_db():
         )
     """)
 
-    # CARS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS cars (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +39,6 @@ def init_db():
         )
     """)
 
-    # CONTRACTS
     conn.execute("""
         CREATE TABLE IF NOT EXISTS contracts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,40 +48,25 @@ def init_db():
             start_date TEXT,
             end_date TEXT,
             total_price REAL,
-            paid_amount REAL DEFAULT 0,
-            remaining REAL DEFAULT 0,
+            paid_amount REAL,
+            remaining REAL,
             status TEXT
         )
     """)
 
-    # USERS DEFAULT
-    users = [
-        ("admin", "1234", "admin"),
-        ("seller", "1234", "seller")
+    conn.execute("DELETE FROM cars")
+
+    cars = [
+        ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
+        ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
+        ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
     ]
 
-    for u in users:
-        try:
-            conn.execute(
-                "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-                u
-            )
-        except:
-            pass
-
-    # CARS DEFAULT (لا تتكرر)
-    existing = conn.execute("SELECT COUNT(*) FROM cars").fetchone()[0]
-    if existing == 0:
-        cars = [
-            ("Sedan", "Toyota Corolla", "White", "1111", "Petrol", "Available", 20),
-            ("SUV", "Honda CRV", "Black", "2222", "Diesel", "Available", 35),
-            ("Hatchback", "Kia Picanto", "Red", "3333", "Petrol", "Available", 15)
-        ]
-
-        conn.executemany("""
+    for c in cars:
+        conn.execute("""
             INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, cars)
+        """, c)
 
     conn.commit()
     conn.close()
@@ -99,39 +79,22 @@ with app.app_context():
 # ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
-
     if request.method == "POST":
-
-        username = request.form["username"]
-        password = request.form["password"]
+        u = request.form["username"]
+        p = request.form["password"]
 
         conn = get_db()
-        user = conn.execute(
-            "SELECT * FROM users WHERE username=? AND password=?",
-            (username, password)
-        ).fetchone()
+        user = conn.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p)).fetchone()
         conn.close()
 
         if user:
             session["user"] = user["username"]
             session["role"] = user["role"]
-            return redirect("/dashboard")
+            return redirect("/contracts")
 
-        return "خطأ في البيانات"
+        return "خطأ"
 
     return render_template("login.html")
-
-
-# ---------------- DASHBOARD ----------------
-@app.route("/dashboard")
-def dashboard():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    if session["role"] == "admin":
-        return redirect("/")
-    return redirect("/contracts")
 
 
 # ---------------- LOGOUT ----------------
@@ -141,65 +104,21 @@ def logout():
     return redirect("/login")
 
 
-# ---------------- HOME (ADMIN ONLY) ----------------
-@app.route("/")
-def home():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    if session["role"] != "admin":
-        return redirect("/contracts")
-
-    conn = get_db()
-    cars = conn.execute("SELECT * FROM cars ORDER BY id DESC").fetchall()
-    conn.close()
-
-    return render_template("index.html", cars=cars)
-
-
-# ---------------- ADD CAR ----------------
-@app.route("/add", methods=["POST"])
-def add_car():
-
-    conn = get_db()
-
-    conn.execute("""
-        INSERT INTO cars (type, model, color, plate, fuel, status, daily_rate)
-        VALUES (?, ?, ?, ?, ?, 'Available', ?)
-    """, (
-        request.form["type"],
-        request.form["model"],
-        request.form["color"],
-        request.form["plate"],
-        request.form["fuel"],
-        request.form["daily_rate"]
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/")
-
-
 # ---------------- CONTRACTS ----------------
 @app.route("/contracts")
 def contracts():
-
     if "user" not in session:
         return redirect("/login")
 
     conn = get_db()
 
-    cars = conn.execute("""
-        SELECT * FROM cars WHERE status='Available'
-    """).fetchall()
+    cars = conn.execute("SELECT * FROM cars WHERE status='Available'").fetchall()
 
     contracts = conn.execute("""
         SELECT contracts.*,
                cars.model,
                cars.plate,
-               (julianday(end_date) - julianday(start_date) + 1) AS days
+               (julianday(end_date)-julianday(start_date)+1) AS days
         FROM contracts
         LEFT JOIN cars ON cars.id = contracts.car_id
         ORDER BY contracts.id DESC
@@ -216,12 +135,12 @@ def create_contract():
 
     conn = get_db()
 
-    total = float(request.form.get("total_price") or 0)
-    paid = float(request.form.get("paid_amount") or 0)
+    total = float(request.form["total_price"] or 0)
+    paid = float(request.form["paid_amount"] or 0)
     remaining = total - paid
 
     conn.execute("""
-        INSERT INTO contracts 
+        INSERT INTO contracts
         (customer_name, customer_phone, car_id, start_date, end_date,
          total_price, paid_amount, remaining, status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -237,9 +156,8 @@ def create_contract():
         "Active"
     ))
 
-    conn.execute("""
-        UPDATE cars SET status='Rented' WHERE id=?
-    """, (request.form["car_id"],))
+    conn.execute("UPDATE cars SET status='Rented' WHERE id=?",
+                 (request.form["car_id"],))
 
     conn.commit()
     conn.close()
@@ -247,49 +165,26 @@ def create_contract():
     return redirect("/contracts")
 
 
-# ---------------- PRINT PDF CONTRACT ----------------
-@app.route("/print_contract/<int:contract_id>")
-def print_contract(contract_id):
+# ---------------- PRINT ----------------
+@app.route("/print/<int:id>")
+def print_contract(id):
 
     conn = get_db()
 
     c = conn.execute("""
-        SELECT contracts.*, cars.model, cars.plate
+        SELECT contracts.*,
+               cars.model,
+               cars.plate,
+               (julianday(end_date)-julianday(start_date)+1) AS days
         FROM contracts
         LEFT JOIN cars ON cars.id = contracts.car_id
         WHERE contracts.id=?
-    """, (contract_id,)).fetchone()
+    """, (id,)).fetchone()
 
     conn.close()
 
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer)
-
-    pdf.setFont("Helvetica-Bold", 16)
-    pdf.drawString(200, 800, "CAR RENTAL CONTRACT")
-
-    pdf.setFont("Helvetica", 12)
-    pdf.drawString(50, 750, f"Customer: {c['customer_name']}")
-    pdf.drawString(50, 730, f"Phone: {c['customer_phone']}")
-    pdf.drawString(50, 710, f"Car: {c['model']} - {c['plate']}")
-    pdf.drawString(50, 690, f"Start: {c['start_date']}")
-    pdf.drawString(50, 670, f"End: {c['end_date']}")
-
-    pdf.drawString(50, 640, f"Total: {c['total_price']}")
-    pdf.drawString(50, 620, f"Paid: {c['paid_amount']}")
-    pdf.drawString(50, 600, f"Remaining: {c['remaining']}")
-
-    pdf.drawString(50, 560, f"Status: {c['status']}")
-
-    pdf.save()
-    buffer.seek(0)
-
-    return send_file(buffer,
-                     as_attachment=True,
-                     download_name=f"contract_{contract_id}.pdf",
-                     mimetype="application/pdf")
+    return render_template("invoice.html", c=c)
 
 
-# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(debug=True)
