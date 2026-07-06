@@ -254,7 +254,10 @@ def print_contract(id):
 
     conn.close()
 
-    return render_template("invoice.html", c=c)
+    # 🔴 مهم جداً: حماية من الخطأ
+    if c is None:
+        return "العقد غير موجود", 404
 
+    return render_template("invoice.html", c=c)
 if __name__ == "__main__":
     app.run(debug=True)
